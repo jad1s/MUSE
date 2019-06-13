@@ -117,7 +117,7 @@ class Evaluator(object):
                 self.src_dico.lang, self.src_dico.word2id, src_emb,
                 self.tgt_dico.lang, self.tgt_dico.word2id, tgt_emb,
                 method=method,
-                dico_eval=self.params.dico_eval
+                dico_eval=self.params.dico_eval #AssertionError
             )
             to_log.update([('%s-%s' % (k, method), v) for k, v in results])
 
@@ -214,7 +214,9 @@ class Evaluator(object):
         """
         self.monolingual_wordsim(to_log)
         self.crosslingual_wordsim(to_log)
-        self.word_translation(to_log)
+        # self.word_translation(to_log) #AssertionError
+        if self.params.dico_eval:
+            self.word_translation(to_log)
         self.sent_translation(to_log)
         self.dist_mean_cosine(to_log)
 

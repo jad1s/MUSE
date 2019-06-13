@@ -51,9 +51,9 @@ def initialize_exp(params):
     # initialization
     if getattr(params, 'seed', -1) >= 0:
         np.random.seed(params.seed)
-        torch.manual_seed(params.seed)
+        torch.manual_seed(params.seed) #为CPU设置种子用于生成随机数，以使得结果是确定的
         if params.cuda:
-            torch.cuda.manual_seed(params.seed)
+            torch.cuda.manual_seed(params.seed) #为当前GPU设置随机种子；如果使用多个GPU，应该使用torch.cuda.manual_seed_all()为所有的GPU设置种子
 
     # dump parameters
     params.exp_path = get_exp_path(params)
@@ -150,7 +150,7 @@ def get_nn_avg_dist(emb, query, knn):
             # cpu mode
             index = faiss.IndexFlatIP(emb.shape[1])
         index.add(emb)
-        distances, _ = index.search(query, knn)
+        distances, _ = index.search(query, knn) #下划线相当于一个变量，但是我们后面用不到它了，所以就简单地用_表示
         return distances.mean(1)
     else:
         bs = 1024
@@ -167,6 +167,8 @@ def get_nn_avg_dist(emb, query, knn):
 def bool_flag(s):
     """
     Parse boolean arguments from the command line.
+    lower() returns a copy of the string in which all 
+    		case-based characters have been lowercased.
     """
     if s.lower() in ['off', 'false', '0']:
         return False
@@ -276,15 +278,16 @@ def read_txt_embeddings(params, source, full_vocab):
         for i, line in enumerate(f):
             if i == 0:
                 split = line.split()
+                # AssertionError
                 assert len(split) == 2
                 assert _emb_dim_file == int(split[1])
             else:
                 word, vect = line.rstrip().split(' ', 1)
                 if not full_vocab:
                     word = word.lower()
-                vect = np.fromstring(vect, sep=' ')
+                vect = np.fromstring(vect, sep=' ') # vector output sep=' '
                 if np.linalg.norm(vect) == 0:  # avoid to have null embeddings
-                    vect[0] = 0.01
+                    vect[0] = 0.01 # IndexError: index 0 is out of bounds for axis 0 with size 0
                 if word in word2id:
                     if full_vocab:
                         logger.warning("Word '%s' found twice in %s embedding file"
@@ -306,7 +309,7 @@ def read_txt_embeddings(params, source, full_vocab):
     # compute new vocabulary / embeddings
     id2word = {v: k for k, v in word2id.items()}
     dico = Dictionary(id2word, word2id, lang)
-    embeddings = np.concatenate(vectors, 0)
+    embeddings = np.concatenate(vectors, 0) # ValueError: need at least one array to concatenate
     embeddings = torch.from_numpy(embeddings).float()
     embeddings = embeddings.cuda() if (params.cuda and not full_vocab) else embeddings
 

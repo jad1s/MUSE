@@ -58,7 +58,7 @@ class Trainer(object):
         # select random word IDs
         bs = self.params.batch_size
         mf = self.params.dis_most_frequent
-        assert mf <= min(len(self.src_dico), len(self.tgt_dico))
+        assert mf <= min(len(self.src_dico), len(self.tgt_dico)) #AssertionError
         src_ids = torch.LongTensor(bs).random_(len(self.src_dico) if mf == 0 else mf)
         tgt_ids = torch.LongTensor(bs).random_(len(self.tgt_dico) if mf == 0 else mf)
         if self.params.cuda:
@@ -87,7 +87,7 @@ class Trainer(object):
         self.discriminator.train()
 
         # loss
-        x, y = self.get_dis_xy(volatile=True)
+        x, y = self.get_dis_xy(volatile=True) #AssertionError
         preds = self.discriminator(Variable(x.data))
         loss = F.binary_cross_entropy(preds, y)
         stats['DIS_COSTS'].append(loss.data.item())

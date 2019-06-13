@@ -46,7 +46,7 @@ def load_dictionary(path, word2id1, word2id2):
     Return a torch tensor of size (n, 2) where n is the size of the
     loader dictionary, and sort it by source word frequency.
     """
-    assert os.path.isfile(path)
+    assert os.path.isfile(path) #AssertionError
 
     pairs = []
     not_found = 0
@@ -54,13 +54,9 @@ def load_dictionary(path, word2id1, word2id2):
     not_found2 = 0
 
     with io.open(path, 'r', encoding='utf-8') as f:
-        for index, line in enumerate(f):
+        for _, line in enumerate(f):
             assert line == line.lower()
-            parts = line.rstrip().split()
-            if len(parts) < 2:
-                logger.warning("Could not parse line %s (%i)", line, index)
-                continue
-            word1, word2 = parts
+            word1, word2 = line.rstrip().split()
             if word1 in word2id1 and word2 in word2id2:
                 pairs.append((word1, word2))
             else:
@@ -93,7 +89,7 @@ def get_word_translation_accuracy(lang1, word2id1, emb1, lang2, word2id2, emb2, 
         path = os.path.join(DIC_EVAL_PATH, '%s-%s.5000-6500.txt' % (lang1, lang2))
     else:
         path = dico_eval
-    dico = load_dictionary(path, word2id1, word2id2)
+    dico = load_dictionary(path, word2id1, word2id2) #AssertionError
     dico = dico.cuda() if emb1.is_cuda else dico
 
     assert dico[:, 0].max() < emb1.size(0)

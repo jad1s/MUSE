@@ -62,7 +62,8 @@ parser.add_argument("--lr_shrink", type=float, default=0.5, help="Shrink the lea
 # training refinement
 parser.add_argument("--n_refinement", type=int, default=5, help="Number of refinement iterations (0 to disable the refinement procedure)")
 # dictionary creation parameters (for refinement)
-parser.add_argument("--dico_eval", type=str, default="default", help="Path to evaluation dictionary")
+# parser.add_argument("--dico_eval", type=str, default="default", help="Path to evaluation dictionary")
+parser.add_argument("--dico_eval", type=str, default="", help="Path to evaluation dictionary. If an empty path is given, then don't use a dictionary to evaluate the aligned word embeddings.")
 parser.add_argument("--dico_method", type=str, default='csls_knn_10', help="Method used for dictionary generation (nn/invsm_beta_30/csls_knn_10)")
 parser.add_argument("--dico_build", type=str, default='S2T', help="S2T,T2S,S2T|T2S,S2T&T2S")
 parser.add_argument("--dico_threshold", type=float, default=0, help="Threshold confidence for dictionary generation")
@@ -79,7 +80,7 @@ parser.add_argument("--normalize_embeddings", type=str, default="", help="Normal
 params = parser.parse_args()
 
 # check parameters
-assert not params.cuda or torch.cuda.is_available()
+assert not params.cuda or torch.cuda.is_available() # if supports cuda
 assert 0 <= params.dis_dropout < 1
 assert 0 <= params.dis_input_dropout < 1
 assert 0 <= params.dis_smooth < 0.5
@@ -87,7 +88,8 @@ assert params.dis_lambda > 0 and params.dis_steps > 0
 assert 0 < params.lr_shrink <= 1
 assert os.path.isfile(params.src_emb)
 assert os.path.isfile(params.tgt_emb)
-assert params.dico_eval == 'default' or os.path.isfile(params.dico_eval)
+# assert params.dico_eval == 'default' or os.path.isfile(params.dico_eval)
+assert params.dico_eval == '' or os.path.isfile(params.dico_eval)
 assert params.export in ["", "txt", "pth"]
 
 # build model / trainer / evaluator
@@ -114,8 +116,8 @@ if params.adversarial:
         for n_iter in range(0, params.epoch_size, params.batch_size):
 
             # discriminator training
-            for _ in range(params.dis_steps):
-                trainer.dis_step(stats)
+            for _ in range(params.dis_steps): # default=5, help="Discriminator steps"
+                trainer.dis_step(stats) #AssertionError
 
             # mapping training (discriminator fooling)
             n_words_proc += trainer.mapping_step(stats)
@@ -136,7 +138,7 @@ if params.adversarial:
 
         # embeddings / discriminator evaluation
         to_log = OrderedDict({'n_epoch': n_epoch})
-        evaluator.all_eval(to_log)
+        evaluator.all_eval(to_log) #AssertionError
         evaluator.eval_dis(to_log)
 
         # JSON log / save best model / end of epoch
