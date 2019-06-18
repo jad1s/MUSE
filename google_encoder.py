@@ -57,15 +57,20 @@ print("Loaded %i lines from zh_sent." % len(chinese_sentences))
 # In[241]:
 
 
-# filter long sentences
+# filter too long or too short sentences
 short_eng_sent = []
 short_chi_sent = []
-length_limit = 150
-print("length_limit = %i" % length_limit)
+max_char = 150
+min_words = 3
+
+print("max_char = %i" % max_char)
+print("min_words = %i" % min_words)
 
 for i in range(len(english_sentences)):
-    if (len(english_sentences[i]) <= length_limit and 
-        len(chinese_sentences[i]) <= length_limit):
+    if (len(english_sentences[i]) <= max_char and 
+        len(chinese_sentences[i]) <= max_char and
+        len(english_sentences[i].split()) >= min_words and 
+        len(chinese_sentences[i].split()) >= min_words):
         short_eng_sent.append(english_sentences[i])
         short_chi_sent.append(chinese_sentences[i])
 
@@ -87,7 +92,21 @@ print("Loaded %i lines from uni_short_eng." % len(uni_short_eng))
 print("Loaded %i lines from uni_short_chi." % len(uni_short_chi))
 
 
-# In[64]:
+# mock up bad translations
+import random
+mix_short_eng = uni_short_eng
+mix_short_chi = uni_short_chi
+
+for i in range(len(uni_short_eng)):
+    # random crop from the left
+    mix_short_eng.append(" ".join(uni_short_eng[i].split()[0:random.randint(1,len(uni_short_eng[i].split()))]))
+    mix_short_chi.append(" ".join(uni_short_chi[i].split()[0:random.randint(1,len(uni_short_chi[i].split()))]))
+#     # random crop & disorder
+#     mix_short_eng.append(" ".join(random.sample(uni_short_eng[i].split(), random.randint(1,len(uni_short_eng[i].split())))))
+#     mix_short_chi.append(" ".join(random.sample(uni_short_chi[i].split(), random.randint(1,len(uni_short_chi[i].split())))))
+
+print("Loaded %i lines from mix_short_eng." % len(mix_short_eng))
+print("Loaded %i lines from mix_short_chi." % len(mix_short_chi))
 
 
 # The 8-language multilingual module. There are also en-es, en-de, and en-fr bilingual modules.
@@ -107,15 +126,16 @@ session = tf.Session(graph=g)
 session.run(init_op)
 
 # Compute embeddings.
-en_result = session.run(embedded_text, feed_dict={text_input: uni_short_eng})
-zh_result = session.run(embedded_text, feed_dict={text_input: uni_short_chi})
+en_result = session.run(embedded_text, feed_dict={text_input: mix_short_eng})
+zh_result = session.run(embedded_text, feed_dict={text_input: mix_short_chi})
 
 
 # In[236]:
 
 
 # output first line: number of vectors and embedding dimension
-num_vector = len(uni_short_eng)
+# Replace the ‘blank’ with underscore
+num_vector = len(mix_short_eng)
 emb_dim = len(en_result[0]) 
 
 print("num_vector = %i" % num_vector)
@@ -123,19 +143,19 @@ print("emb_dim = %i" % emb_dim)
 
 # output embeddings
 with open('./data/src_emb_en.txt', 'w') as f:
-    for i in range(len(uni_short_eng)+1):
+    for i in range(len(mix_short_eng)+1):
         if i == 0:
             f.write(str(num_vector)+' '+str(emb_dim)+'\n')
         else:
-            f.write(str(uni_short_eng[i-1]).replace(' ','')+' '+str(en_result[i-1].tolist())[1:-1].replace(',',' ')+'\n')
+            f.write(str(mix_short_eng[i-1]).replace(' ','_')+' '+str(en_result[i-1].tolist())[1:-1].replace(',',' ')+'\n')
 
 print("src_emb_en.txt done")
 
 with open('./data/tgt_emb_zh.txt', 'w') as f:
-    for i in range(len(uni_short_chi)):
+    for i in range(len(mix_short_chi)+1):
         if i == 0:
             f.write(str(num_vector)+' '+str(emb_dim)+'\n')
         else:
-            f.write(str(uni_short_chi[i]).replace(' ','')+' '+str(zh_result[i].tolist())[1:-1].replace(',',' ')+'\n')
+            f.write(str(mix_short_chi[i-1]).replace(' ','_')+' '+str(zh_result[i-1].tolist())[1:-1].replace(',',' ')+'\n')
 
 print("tgt_emb_zh.txt done")
