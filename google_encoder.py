@@ -1,18 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[3]:
-
-
-# Install the latest TensorFlow version compatible with tf-sentencepiece.
-# !pip3 install --quiet tensorflow==1.12.0
-# # Install TF-Hub.
-# !pip3 install --quiet tensorflow-hub
-# !pip3 install --quiet seaborn
-# # Install Sentencepiece.
-# !pip3 install --quiet tf-sentencepiece
-
-
 # In[59]:
 
 
@@ -78,10 +66,27 @@ print("Loaded %i lines from short_eng_sent." % len(short_eng_sent))
 print("Loaded %i lines from short_chi_sent." % len(short_chi_sent))
 
 
-# filter duplicate sentences
-eng_chi_dict = {}
+# mock up bad translations
+import random
+mix_short_eng = short_eng_sent
+mix_short_chi = short_chi_sent
+
 for i in range(len(short_eng_sent)):
-    eng_chi_dict[short_eng_sent[i]]=short_chi_sent[i]
+    # random crop from the left, at least min_words
+    mix_short_eng.append(" ".join(short_eng_sent[i].split()[0:random.randint(min_words,len(short_eng_sent[i].split()))]))
+    mix_short_chi.append(" ".join(short_chi_sent[i].split()[0:random.randint(min_words,len(short_chi_sent[i].split()))]))
+#     # random crop & disorder
+#     mix_short_eng.append(" ".join(random.sample(uni_short_eng[i].split(), random.randint(1,len(uni_short_eng[i].split())))))
+#     mix_short_chi.append(" ".join(random.sample(uni_short_chi[i].split(), random.randint(1,len(uni_short_chi[i].split())))))
+
+print("Loaded %i lines from mix_short_eng." % len(mix_short_eng))
+print("Loaded %i lines from mix_short_chi." % len(mix_short_chi))
+
+
+# filter duplicate entries
+eng_chi_dict = {}
+for i in range(len(mix_short_eng)):
+    eng_chi_dict[mix_short_eng[i]]=mix_short_chi[i]
 
 chi_eng_dict = {v: k for k, v in eng_chi_dict.items()}
 
@@ -90,23 +95,6 @@ uni_short_chi = list(chi_eng_dict.keys())
 
 print("Loaded %i lines from uni_short_eng." % len(uni_short_eng))
 print("Loaded %i lines from uni_short_chi." % len(uni_short_chi))
-
-
-# mock up bad translations
-import random
-mix_short_eng = uni_short_eng
-mix_short_chi = uni_short_chi
-
-for i in range(len(uni_short_eng)):
-    # random crop from the left
-    mix_short_eng.append(" ".join(uni_short_eng[i].split()[0:random.randint(1,len(uni_short_eng[i].split()))]))
-    mix_short_chi.append(" ".join(uni_short_chi[i].split()[0:random.randint(1,len(uni_short_chi[i].split()))]))
-#     # random crop & disorder
-#     mix_short_eng.append(" ".join(random.sample(uni_short_eng[i].split(), random.randint(1,len(uni_short_eng[i].split())))))
-#     mix_short_chi.append(" ".join(random.sample(uni_short_chi[i].split(), random.randint(1,len(uni_short_chi[i].split())))))
-
-print("Loaded %i lines from mix_short_eng." % len(mix_short_eng))
-print("Loaded %i lines from mix_short_chi." % len(mix_short_chi))
 
 
 # The 8-language multilingual module. There are also en-es, en-de, and en-fr bilingual modules.
@@ -126,8 +114,8 @@ session = tf.Session(graph=g)
 session.run(init_op)
 
 # Compute embeddings.
-en_result = session.run(embedded_text, feed_dict={text_input: mix_short_eng})
-zh_result = session.run(embedded_text, feed_dict={text_input: mix_short_chi})
+en_result = session.run(embedded_text, feed_dict={text_input: uni_short_eng})
+zh_result = session.run(embedded_text, feed_dict={text_input: uni_short_chi})
 
 
 # In[236]:
@@ -135,7 +123,7 @@ zh_result = session.run(embedded_text, feed_dict={text_input: mix_short_chi})
 
 # output first line: number of vectors and embedding dimension
 # Replace the ‘blank’ with underscore
-num_vector = len(mix_short_eng)
+num_vector = len(uni_short_eng)
 emb_dim = len(en_result[0]) 
 
 print("num_vector = %i" % num_vector)
@@ -143,19 +131,19 @@ print("emb_dim = %i" % emb_dim)
 
 # output embeddings
 with open('./data/src_emb_en.txt', 'w') as f:
-    for i in range(len(mix_short_eng)+1):
+    for i in range(len(uni_short_eng)+1):
         if i == 0:
             f.write(str(num_vector)+' '+str(emb_dim)+'\n')
         else:
-            f.write(str(mix_short_eng[i-1]).replace(' ','_')+' '+str(en_result[i-1].tolist())[1:-1].replace(',',' ')+'\n')
+            f.write(str(uni_short_eng[i-1]).replace(' ','_')+' '+str(en_result[i-1].tolist())[1:-1].replace(',',' ')+'\n')
 
 print("src_emb_en.txt done")
 
 with open('./data/tgt_emb_zh.txt', 'w') as f:
-    for i in range(len(mix_short_chi)+1):
+    for i in range(len(uni_short_chi)+1):
         if i == 0:
             f.write(str(num_vector)+' '+str(emb_dim)+'\n')
         else:
-            f.write(str(mix_short_chi[i-1]).replace(' ','_')+' '+str(zh_result[i-1].tolist())[1:-1].replace(',',' ')+'\n')
+            f.write(str(uni_short_chi[i-1]).replace(' ','_')+' '+str(zh_result[i-1].tolist())[1:-1].replace(',',' ')+'\n')
 
 print("tgt_emb_zh.txt done")
